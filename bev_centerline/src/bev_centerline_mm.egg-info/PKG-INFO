@@ -1,0 +1,15 @@
+Metadata-Version: 2.4
+Name: bev-centerline-mm
+Version: 0.1.0
+Summary: Dual-vision Qwen3.5 + DINOv3 project for BEV road centerline JSON generation.
+Requires-Python: >=3.10
+Requires-Dist: torch>=2.1
+Requires-Dist: torchvision>=0.16
+Requires-Dist: transformers>=4.57.0
+Requires-Dist: accelerate>=0.30
+Requires-Dist: peft>=0.11
+Requires-Dist: pillow>=10.0
+Requires-Dist: pyyaml>=6.0
+Requires-Dist: tqdm>=4.66
+Requires-Dist: numpy>=1.24
+Requires-Dist: matplotlib>=3.7

@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import argparse
 import subprocess
 import sys
 from dataclasses import dataclass, field
@@ -31,7 +32,7 @@ BOX_PROMPT_REQUIRED_FIELDS = {
 @dataclass
 class BuildConfig:
     # 数据根目录。若 train / val 分开，可以改成分别填写 train_root / val_root。
-    dataset_root: str = "/home/tzy/Desktop/test"
+    dataset_root: str = ""
     train_root: str = ""
     val_root: str = ""
 
@@ -71,6 +72,55 @@ class BuildConfig:
 
 
 CONFIG = BuildConfig()
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Build manifest and export line/segmentation datasets in one command.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+
+    parser.add_argument("--dataset-root", type=str, default=None)
+    parser.add_argument("--train-root", type=str, default=None)
+    parser.add_argument("--val-root", type=str, default=None)
+    parser.add_argument("--output-root", type=str, default=None)
+    parser.add_argument("--splits", type=str, nargs="+", default=None)
+
+    parser.add_argument("--image-relpath", type=str, default=None)
+    parser.add_argument("--mask-relpath", type=str, default=None)
+    parser.add_argument("--image-dir-relpath", type=str, default=None)
+    parser.add_argument("--image-glob", type=str, default=None)
+    parser.add_argument("--mask-suffix", type=str, default=None)
+    parser.add_argument("--lane-relpath", type=str, default=None)
+    parser.add_argument("--mask-threshold", type=int, default=None)
+    parser.add_argument("--box-size-px", type=int, default=None)
+    parser.add_argument("--overlap-px", type=int, default=None)
+    parser.add_argument("--keep-margin-px", type=int, default=None)
+    parser.add_argument("--review-crop-pad-px", type=int, default=None)
+    parser.add_argument("--box-min-mask-ratio", type=float, default=None)
+    parser.add_argument("--box-min-mask-pixels", type=int, default=None)
+    parser.add_argument("--box-max-per-sample", type=int, default=None)
+    parser.add_argument("--search-within-review-bbox", action=argparse.BooleanOptionalAction, default=None)
+    parser.add_argument("--fallback-to-all-if-empty", action=argparse.BooleanOptionalAction, default=None)
+    parser.add_argument("--max-samples-per-split", type=int, default=None)
+
+    parser.add_argument("--band-indices", type=int, nargs="+", default=None)
+    parser.add_argument("--box-resample-step-px", type=float, default=None)
+    parser.add_argument("--box-boundary-tol-px", type=float, default=None)
+    parser.add_argument("--max-families-per-split", type=int, default=None)
+    parser.add_argument("--empty-box-drop-ratio", type=float, default=None)
+    parser.add_argument("--empty-box-seed", type=int, default=None)
+    parser.add_argument("--box-user-prompt-file", type=str, default=None)
+    return parser.parse_args()
+
+
+def build_runtime_config(args: argparse.Namespace) -> BuildConfig:
+    config = BuildConfig()
+    for field_name in BuildConfig.__dataclass_fields__:
+        value = getattr(args, field_name, None)
+        if value is not None:
+            setattr(config, field_name, value)
+    return config
 
 
 def log(message: str) -> None:
@@ -131,11 +181,12 @@ def run_command(command: List[str], step_name: str) -> None:
 
 
 def main() -> None:
+    args = parse_args()
     python_executable = sys.executable
-    config = CONFIG
+    config = build_runtime_config(args)
 
-    if config.dataset_root == "/path/to/rc_dataset" and not config.train_root and not config.val_root:
-        raise ValueError("Please edit CONFIG.dataset_root or CONFIG.train_root / CONFIG.val_root before running.")
+    if not str(config.dataset_root).strip() and not str(config.train_root).strip() and not str(config.val_root).strip():
+        raise ValueError("Please provide --dataset-root or --train-root / --val-root before running.")
 
     validate_prompt_templates(config)
 
