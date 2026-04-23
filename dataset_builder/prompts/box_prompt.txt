@@ -1,0 +1,3 @@
+<image>
+Task: reconstruct all visible road centerlines inside box [{box_x_min},{box_y_min},{box_x_max},{box_y_max}].
+Return strict JSON only with top-level key lines.

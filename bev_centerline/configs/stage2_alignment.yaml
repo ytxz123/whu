@@ -1,0 +1,33 @@
+project_root: ..
+paths:
+  qwen_path: ../qwen3.5_2B
+  dinov3_repo: ../dinov3
+  output_dir: outputs/stage2
+
+seed: 42
+device: auto
+
+data:
+  train_manifest: data/stage2/train.jsonl
+  image_size: 512
+  batch_size: 1
+  num_workers: 1
+
+model:
+  qwen_dtype: bfloat16
+  dinov3_arch: dinov3_vits16
+  dinov3_weights: null
+  dinov3_pretrained: false
+  dinov3_checkpoint: outputs/stage1/best.pt
+  dino_feature_dim: 384
+  qwen_hidden_dim: 2048
+  task_token_count: 128
+  projection_hidden_dim: 1024
+  trainable_last_blocks: 1
+
+optim:
+  epochs: 2
+  lr: 0.00005
+  weight_decay: 0.01
+  log_every: 10
+
