@@ -1,7 +1,8 @@
 __pycache__/
 *.py[cod]
+*.egg-info/
 .venv/
-outputs/
-data/
+/outputs/
+/data/
+/weights/
 .DS_Store
-

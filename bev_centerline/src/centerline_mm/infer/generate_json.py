@@ -39,7 +39,9 @@ def build_model_for_infer(infer_cfg: dict, checkpoint: dict, device: torch.devic
     if "injector" in checkpoint:
         model.injector.load_state_dict(checkpoint["injector"], strict=False)
     if "qwen_lora" in checkpoint:
-        model.qwen.model.load_state_dict(checkpoint["qwen_lora"], strict=False)
+        from peft import set_peft_model_state_dict
+
+        set_peft_model_state_dict(model.qwen.model, checkpoint["qwen_lora"])
     model.eval()
     return model
 
@@ -63,7 +65,8 @@ def main() -> None:
 
     image_size = int(cfg.get("image_size", 512))
     qwen_image = pil_for_qwen(args.image, image_size)
-    dino_image = image_transform(image_size)(load_rgb(args.image)).unsqueeze(0).to(device)
+    train_cfg = checkpoint.get("config", cfg)
+    dino_image = image_transform(image_size, norm_preset=get_by_path(train_cfg, "data.dino_norm_preset", "lvd1689m"))(load_rgb(args.image)).unsqueeze(0).to(device)
     qwen_inputs = model.qwen.build_inputs([qwen_image], [args.prompt], targets=None, device=device)
     with torch.no_grad():
         ids = model.generate(
@@ -81,4 +84,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

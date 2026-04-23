@@ -64,12 +64,12 @@ def main() -> None:
     out_dir = ensure_dir(Path(args.out_dir or (ckpt_path.parent / "eval")))
     vis_dir = ensure_dir(out_dir / "visualizations")
 
-    ds = Stage1SegmentationDataset(manifest, get_by_path(cfg, "data.image_size", 512))
+    ds = Stage1SegmentationDataset(manifest, get_by_path(cfg, "data.image_size", 512), norm_preset=get_by_path(cfg, "data.dino_norm_preset", "lvd1689m"))
     loader = DataLoader(ds, batch_size=get_by_path(cfg, "data.batch_size", 2), shuffle=False, num_workers=get_by_path(cfg, "data.num_workers", 2))
 
     encoder = DINOv3TaskEncoder(
         dinov3_repo=paths.dinov3_repo,
-        arch=get_by_path(cfg, "model.dinov3_arch", "dinov3_vits16"),
+        arch=get_by_path(cfg, "model.dinov3_arch", "dinov3_vitl16"),
         pretrained=False,
         freeze_backbone=False,
     )
@@ -101,4 +101,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

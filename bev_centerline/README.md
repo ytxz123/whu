@@ -1,24 +1,40 @@
 # BEV Centerline MM
 
-这是一个从零搭建的多模态项目，用于从 512x512 黑底 BEV 道路结构图生成道路中心线 JSON。
+这是一个可运行的新项目：用 Qwen3.5 原生视觉路径 + DINOv3 外部任务视觉路径，从 512x512 黑底 BEV 道路结构图生成道路中心线 JSON。
 
-核心设计：
+如果你是第一次使用，直接按这个顺序看：
 
-- 保留 Qwen3.5 原生视觉编码器，不改内部结构，用于整图全局理解。
-- 额外引入 DINOv3 任务视觉编码器，用于学习细粒度道路结构 token。
-- DINOv3 token 经过归一化、二维位置编码、轻量投影和重采样后，作为额外上下文 token 注入 Qwen3.5 语言侧。
-- 三阶段训练：DINOv3 分割监督、坐标级语义对齐、最终严格 JSON 生成。
+1. [新手从零开始教程](docs/00_beginner_guide.md)
+2. [数据集格式和 dataset_builder 对接](docs/08_dataset_format.md)
+3. [模型权重放置说明](docs/09_weights.md)
+4. [三阶段训练说明](docs/03_training_stages.md)
+5. [推理说明](docs/05_inference.md)
 
-入口：
+最短命令顺序：
 
 ```bash
-cd bev_centerline
-PYTHONPATH=src python -m centerline_mm.train.stage1_train_seg --config configs/stage1_segmentation.yaml
-PYTHONPATH=src python -m centerline_mm.eval.stage1_eval_seg --config configs/stage1_segmentation.yaml
-PYTHONPATH=src python -m centerline_mm.train.stage2_train_alignment --config configs/stage2_alignment.yaml
-PYTHONPATH=src python -m centerline_mm.train.stage3_train_json_lora --config configs/stage3_json_lora.yaml
-PYTHONPATH=src python -m centerline_mm.infer.generate_json --config configs/infer.yaml --image data/demo.png
+cd /Users/tzy/PT/whu/bev_centerline
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+# 数据和权重放好后先体检
+./scripts/check_setup.sh
+
+# 训练与评估
+./scripts/train_stage1.sh
+./scripts/eval_stage1.sh
+./scripts/train_stage2.sh
+./scripts/train_stage3.sh
+
+# 推理，只输出 JSON
+./scripts/infer.sh --image data/dataset_test/data_line/images/000001.png
 ```
 
-详细说明见 `docs/`。
+项目默认读取：
+
+- DINOv3 官方代码仓库：`/Users/tzy/PT/whu/dinov3`
+- Qwen3.5 模型目录：`/Users/tzy/PT/whu/Qwen3.5_2B`
+- dataset_builder 生成数据：`/Users/tzy/PT/whu/bev_centerline/data/dataset_test`
+- DINOv3 权重：`/Users/tzy/PT/whu/bev_centerline/weights/dinov3/dinov3_vitl16_pretrain_lvd1689m.pth`
 

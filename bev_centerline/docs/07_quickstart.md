@@ -1,56 +1,74 @@
 # 快速开始
 
-## 1. 准备环境
+这是极简版流程。第一次使用请优先看 `docs/00_beginner_guide.md`，那里每一步都有检查方法和目录说明。
+
+## 1. 进入项目
 
 ```bash
 cd /Users/tzy/PT/whu/bev_centerline
+```
+
+## 2. 安装环境
+
+```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-如果已经有可用的 PyTorch/Transformers 环境，可以只安装缺失依赖。
+## 3. 生成数据
 
-## 2. 准备数据
+在工作区根目录运行 dataset_builder：
 
-创建：
+```bash
+cd /Users/tzy/PT/whu
+python dataset_builder/scripts/build_dataset.py \
+  --dataset-root /path/to/rc_dataset \
+  --output-root /Users/tzy/PT/whu/bev_centerline/data/dataset_test
+```
+
+生成后必须有：
 
 ```text
-data/stage1/train.jsonl
-data/stage1/val.jsonl
-data/stage2/train.jsonl
-data/stage3/train.jsonl
+bev_centerline/data/dataset_test/data_line/train.jsonl
+bev_centerline/data/dataset_test/data_seg/train.jsonl
+bev_centerline/data/dataset_test/data_seg/val.jsonl
 ```
 
-具体格式见 `docs/08_dataset_format.md`。
-
-## 3. 训练阶段一
+## 4. 放 DINOv3 权重
 
 ```bash
-PYTHONPATH=src python -m centerline_mm.train.stage1_train_seg --config configs/stage1_segmentation.yaml
+cd /Users/tzy/PT/whu/bev_centerline
+mkdir -p weights/dinov3
 ```
 
-## 4. 评估阶段一
+把官方 ViT-L/16 LVD-1689M 权重放到：
 
-```bash
-PYTHONPATH=src python -m centerline_mm.eval.stage1_eval_seg --config configs/stage1_segmentation.yaml
+```text
+weights/dinov3/dinov3_vitl16_pretrain_lvd1689m.pth
 ```
 
-## 5. 训练阶段二
+## 5. 训练前检查
 
 ```bash
-PYTHONPATH=src python -m centerline_mm.train.stage2_train_alignment --config configs/stage2_alignment.yaml
+./scripts/check_setup.sh
 ```
 
-## 6. 训练阶段三
+看到 `[OK] Setup check passed.` 再继续。
+
+## 6. 三阶段训练
 
 ```bash
-PYTHONPATH=src python -m centerline_mm.train.stage3_train_json_lora --config configs/stage3_json_lora.yaml
+./scripts/train_stage1.sh
+./scripts/eval_stage1.sh
+./scripts/train_stage2.sh
+./scripts/train_stage3.sh
 ```
 
 ## 7. 推理
 
 ```bash
-PYTHONPATH=src python -m centerline_mm.infer.generate_json --config configs/infer.yaml --image data/demo.png
+./scripts/infer.sh --image data/dataset_test/data_line/images/000001.png
 ```
 
+输出只会是 JSON。

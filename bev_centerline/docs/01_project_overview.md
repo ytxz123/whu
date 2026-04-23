@@ -39,7 +39,7 @@ bev_centerline/
 默认依赖本地路径：
 
 - `../dinov3`
-- `../qwen3.5_2B`
+- `../Qwen3.5_2B`
 
 相对路径以 `bev_centerline/configs/*.yaml` 的位置解析，因此从哪个目录启动都不会改变路径含义。
 

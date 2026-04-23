@@ -36,9 +36,15 @@ def main() -> None:
     paths = resolve_paths(cfg)
     seed_everything(int(cfg.get("seed", 42)))
     device = get_device(cfg.get("device", "auto"))
-    out_dir = ensure_dir(paths.project_root / get_by_path(cfg, "paths.output_dir", "outputs/stage3"))
+    out_dir = ensure_dir(paths.output_dir)
 
-    ds = CenterlineGenerationDataset(paths.project_root / get_by_path(cfg, "data.train_manifest"), get_by_path(cfg, "data.image_size", 512), stage=3)
+    ds = CenterlineGenerationDataset(
+        paths.project_root / get_by_path(cfg, "data.train_manifest"),
+        get_by_path(cfg, "data.image_size", 512),
+        stage=3,
+        norm_preset=get_by_path(cfg, "data.dino_norm_preset", "lvd1689m"),
+        use_dataset_prompt=get_by_path(cfg, "data.use_dataset_prompt", False),
+    )
     loader = DataLoader(ds, batch_size=get_by_path(cfg, "data.batch_size", 1), shuffle=True, num_workers=get_by_path(cfg, "data.num_workers", 1), collate_fn=generation_collate)
 
     model = build_dual_model(cfg, device=device, load_stage2=True)
@@ -63,17 +69,18 @@ def main() -> None:
             if step % log_every == 0:
                 pbar.set_postfix(loss=float(loss.item()))
 
+        from peft import get_peft_model_state_dict
+
         save_checkpoint(
             out_dir / "latest.pt",
             epoch=epoch,
             task_encoder=model.task_encoder.state_dict(),
             projector=model.projector.state_dict(),
             injector=model.injector.state_dict(),
-            qwen_lora=model.qwen.model.state_dict(),
+            qwen_lora=get_peft_model_state_dict(model.qwen.model),
             config=cfg,
         )
 
 
 if __name__ == "__main__":
     main()
-

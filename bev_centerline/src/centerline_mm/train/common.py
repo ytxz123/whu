@@ -13,14 +13,23 @@ from centerline_mm.utils.checkpoint import load_checkpoint
 from centerline_mm.utils.config import get_by_path, resolve_paths
 
 
+def resolve_project_path(project_root: Path, value: str | None) -> str | None:
+    if not value:
+        return None
+    path = Path(str(value))
+    if not path.is_absolute():
+        path = project_root / path
+    return str(path.resolve())
+
+
 def build_dual_model(cfg: dict, device: torch.device, load_stage2: bool = False) -> DualVisionCenterlineModel:
     paths = resolve_paths(cfg)
     qwen = Qwen35MMBackbone(paths.qwen_path, dtype=get_by_path(cfg, "model.qwen_dtype", "bfloat16"), device=device)
     encoder = DINOv3TaskEncoder(
         dinov3_repo=paths.dinov3_repo,
-        arch=get_by_path(cfg, "model.dinov3_arch", "dinov3_vits16"),
+        arch=get_by_path(cfg, "model.dinov3_arch", "dinov3_vitl16"),
         pretrained=get_by_path(cfg, "model.dinov3_pretrained", False),
-        weights=get_by_path(cfg, "model.dinov3_weights"),
+        weights=resolve_project_path(paths.project_root, get_by_path(cfg, "model.dinov3_weights")),
         freeze_backbone=False,
         trainable_last_blocks=get_by_path(cfg, "model.trainable_last_blocks", 0),
     )
@@ -56,4 +65,3 @@ def build_dual_model(cfg: dict, device: torch.device, load_stage2: bool = False)
 
 def trainable_parameters(model: torch.nn.Module):
     return [p for p in model.parameters() if p.requires_grad]
-

@@ -1,6 +1,6 @@
 project_root: ..
 paths:
-  qwen_path: ../qwen3.5_2B
+  qwen_path: ../Qwen3.5_2B
   dinov3_repo: ../dinov3
   checkpoint: outputs/stage3/latest.pt
 

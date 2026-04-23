@@ -47,7 +47,7 @@ def resolve_paths(cfg: dict[str, Any]) -> Paths:
 
     return Paths(
         project_root=project_root,
-        qwen_path=resolve(get_by_path(cfg, "paths.qwen_path"), "../qwen3.5_2B"),
+        qwen_path=resolve(get_by_path(cfg, "paths.qwen_path"), "../Qwen3.5_2B"),
         dinov3_repo=resolve(get_by_path(cfg, "paths.dinov3_repo"), "../dinov3"),
         output_dir=resolve(get_by_path(cfg, "paths.output_dir"), "outputs"),
     )

@@ -22,9 +22,15 @@ def main() -> None:
     paths = resolve_paths(cfg)
     seed_everything(int(cfg.get("seed", 42)))
     device = get_device(cfg.get("device", "auto"))
-    out_dir = ensure_dir(paths.project_root / get_by_path(cfg, "paths.output_dir", "outputs/stage2"))
+    out_dir = ensure_dir(paths.output_dir)
 
-    ds = CenterlineGenerationDataset(paths.project_root / get_by_path(cfg, "data.train_manifest"), get_by_path(cfg, "data.image_size", 512), stage=2)
+    ds = CenterlineGenerationDataset(
+        paths.project_root / get_by_path(cfg, "data.train_manifest"),
+        get_by_path(cfg, "data.image_size", 512),
+        stage=2,
+        norm_preset=get_by_path(cfg, "data.dino_norm_preset", "lvd1689m"),
+        use_dataset_prompt=get_by_path(cfg, "data.use_dataset_prompt", False),
+    )
     loader = DataLoader(ds, batch_size=get_by_path(cfg, "data.batch_size", 1), shuffle=True, num_workers=get_by_path(cfg, "data.num_workers", 1), collate_fn=generation_collate)
 
     model = build_dual_model(cfg, device=device, load_stage2=False)
@@ -60,4 +66,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

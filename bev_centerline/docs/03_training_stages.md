@@ -2,6 +2,13 @@
 
 ## 阶段一：任务视觉编码器训练
 
+训练前先确认：
+
+```bash
+cd /Users/tzy/PT/whu/bev_centerline
+./scripts/check_setup.sh
+```
+
 入口：
 
 ```bash
@@ -13,6 +20,25 @@ PYTHONPATH=src python -m centerline_mm.train.stage1_train_seg --config configs/s
 
 - 用分割任务训练 DINOv3 外部分支。
 - 让外部任务视觉路径学习道路结构和中心线恢复相关的细粒度表示。
+
+默认数据：
+
+```text
+data/dataset_test/data_seg/train.jsonl
+data/dataset_test/data_seg/val.jsonl
+```
+
+默认 DINOv3 权重：
+
+```text
+weights/dinov3/dinov3_vitl16_pretrain_lvd1689m.pth
+```
+
+默认 DINOv3 图像归一化：
+
+```yaml
+dino_norm_preset: lvd1689m
+```
 
 训练内容：
 
@@ -52,6 +78,14 @@ PYTHONPATH=src python -m centerline_mm.train.stage2_train_alignment --config con
 - 只对目标输出部分计算交叉熵。
 - 不做自由采样式推理训练。
 
+默认数据：
+
+```text
+data/dataset_test/data_line/train.jsonl
+```
+
+该文件来自 dataset_builder，是 ShareGPT 风格。数据层会自动从 `messages` 和 `images` 中提取图片、prompt 和 assistant lines。
+
 中间表示示例：
 
 ```text
@@ -84,6 +118,18 @@ PYTHONPATH=src python -m centerline_mm.train.stage3_train_json_lora --config con
 - Qwen3.5 原生视觉路径保持不变。
 - 默认对 Qwen3.5 开启 LoRA。
 
+默认输入 checkpoint：
+
+```text
+outputs/stage2/latest.pt
+```
+
+默认输出 checkpoint：
+
+```text
+outputs/stage3/latest.pt
+```
+
 训练规范化：
 
 - 训练前将目标 JSON 归一化为固定格式。
@@ -95,4 +141,3 @@ PYTHONPATH=src python -m centerline_mm.train.stage3_train_json_lora --config con
 产物：
 
 - `outputs/stage3/latest.pt`
-

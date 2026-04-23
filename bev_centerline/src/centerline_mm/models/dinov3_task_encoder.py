@@ -1,12 +1,9 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
 
 import torch
 from torch import nn
-
-from centerline_mm.utils.runtime import add_repo_to_path
 
 
 class DINOv3TaskEncoder(nn.Module):
@@ -15,22 +12,23 @@ class DINOv3TaskEncoder(nn.Module):
     def __init__(
         self,
         dinov3_repo: str | Path,
-        arch: str = "dinov3_vits16",
+        arch: str = "dinov3_vitl16",
         pretrained: bool = False,
         weights: str | None = None,
         freeze_backbone: bool = False,
         trainable_last_blocks: int = 0,
     ) -> None:
         super().__init__()
-        add_repo_to_path(dinov3_repo)
-        from dinov3.hub import backbones
-
-        builder = getattr(backbones, arch)
-        kwargs: dict[str, Any] = {"pretrained": pretrained}
+        if "convnext" in arch:
+            raise ValueError(
+                "This project expects DINOv3 ViT patch tokens from forward_features(). "
+                "Use a ViT backbone such as dinov3_vits16, dinov3_vitb16, or dinov3_vitl16."
+            )
+        kwargs = {"pretrained": pretrained}
         if weights:
             kwargs["weights"] = weights
             kwargs["pretrained"] = True
-        self.backbone = builder(**kwargs)
+        self.backbone = torch.hub.load(str(Path(dinov3_repo).resolve()), arch, source="local", **kwargs)
         self.patch_size = int(getattr(self.backbone, "patch_size", 16))
         self.embed_dim = int(getattr(self.backbone, "embed_dim", 384))
 
@@ -92,4 +90,3 @@ class TaskEncoderWithAdapter(nn.Module):
         tokens = out["tokens"]
         out["tokens"] = tokens + self.adapter(tokens)
         return out
-

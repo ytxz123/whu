@@ -12,6 +12,7 @@ from centerline_mm.data.stage1_dataset import Stage1SegmentationDataset
 from centerline_mm.eval.seg_metrics import BinarySegMetrics
 from centerline_mm.models.dinov3_task_encoder import DINOv3TaskEncoder
 from centerline_mm.models.segmentation import Stage1SegmentationModel
+from centerline_mm.train.common import resolve_project_path
 from centerline_mm.utils.checkpoint import save_checkpoint
 from centerline_mm.utils.config import get_by_path, load_yaml, resolve_paths
 from centerline_mm.utils.runtime import ensure_dir, get_device, seed_everything
@@ -38,18 +39,19 @@ def main() -> None:
     paths = resolve_paths(cfg)
     seed_everything(int(cfg.get("seed", 42)))
     device = get_device(cfg.get("device", "auto"))
-    out_dir = ensure_dir(paths.project_root / get_by_path(cfg, "paths.output_dir", "outputs/stage1"))
+    out_dir = ensure_dir(paths.output_dir)
 
-    train_ds = Stage1SegmentationDataset(paths.project_root / get_by_path(cfg, "data.train_manifest"), get_by_path(cfg, "data.image_size", 512))
-    val_ds = Stage1SegmentationDataset(paths.project_root / get_by_path(cfg, "data.val_manifest"), get_by_path(cfg, "data.image_size", 512))
+    norm_preset = get_by_path(cfg, "data.dino_norm_preset", "lvd1689m")
+    train_ds = Stage1SegmentationDataset(paths.project_root / get_by_path(cfg, "data.train_manifest"), get_by_path(cfg, "data.image_size", 512), norm_preset=norm_preset)
+    val_ds = Stage1SegmentationDataset(paths.project_root / get_by_path(cfg, "data.val_manifest"), get_by_path(cfg, "data.image_size", 512), norm_preset=norm_preset)
     train_loader = DataLoader(train_ds, batch_size=get_by_path(cfg, "data.batch_size", 2), shuffle=True, num_workers=get_by_path(cfg, "data.num_workers", 2))
     val_loader = DataLoader(val_ds, batch_size=get_by_path(cfg, "data.batch_size", 2), shuffle=False, num_workers=get_by_path(cfg, "data.num_workers", 2))
 
     encoder = DINOv3TaskEncoder(
         dinov3_repo=paths.dinov3_repo,
-        arch=get_by_path(cfg, "model.dinov3_arch", "dinov3_vits16"),
+        arch=get_by_path(cfg, "model.dinov3_arch", "dinov3_vitl16"),
         pretrained=get_by_path(cfg, "model.dinov3_pretrained", False),
-        weights=get_by_path(cfg, "model.dinov3_weights"),
+        weights=resolve_project_path(paths.project_root, get_by_path(cfg, "model.dinov3_weights")),
         freeze_backbone=get_by_path(cfg, "model.freeze_backbone", False),
         trainable_last_blocks=get_by_path(cfg, "model.trainable_last_blocks", 0),
     )
@@ -96,4 +98,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

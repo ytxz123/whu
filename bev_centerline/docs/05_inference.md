@@ -9,6 +9,13 @@ PYTHONPATH=src python -m centerline_mm.infer.generate_json \
   --image data/demo.png
 ```
 
+便捷脚本：
+
+```bash
+cd /Users/tzy/PT/whu/bev_centerline
+./scripts/infer.sh --image data/dataset_test/data_line/images/000001.png
+```
+
 指定 checkpoint：
 
 ```bash
@@ -36,3 +43,16 @@ PYTHONPATH=src python -m centerline_mm.infer.generate_json \
 - 过滤少于 2 个点的线。
 - `category` 固定为 `road_centerline`。
 
+推理前需要存在：
+
+```text
+outputs/stage3/latest.pt
+```
+
+如果这个文件不存在，先完成：
+
+```bash
+./scripts/train_stage1.sh
+./scripts/train_stage2.sh
+./scripts/train_stage3.sh
+```

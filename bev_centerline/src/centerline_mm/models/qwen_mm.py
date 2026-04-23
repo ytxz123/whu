@@ -72,7 +72,8 @@ class Qwen35MMBackbone(nn.Module):
                 add_generation_prompt=True,
             )
             if target is not None:
-                text = text + target
+                eos = getattr(getattr(self.processor, "tokenizer", None), "eos_token", None) or ""
+                text = text + target + eos
             texts.append(text)
         batch = self.processor(text=texts, images=images, return_tensors="pt", padding=True)
         if device is not None:

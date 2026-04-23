@@ -1,6 +1,6 @@
 project_root: ..
 paths:
-  qwen_path: ../qwen3.5_2B
+  qwen_path: ../Qwen3.5_2B
   dinov3_repo: ../dinov3
   output_dir: outputs/stage2
 
@@ -8,18 +8,20 @@ seed: 42
 device: auto
 
 data:
-  train_manifest: data/stage2/train.jsonl
+  train_manifest: data/dataset_test/data_line/train.jsonl
   image_size: 512
+  dino_norm_preset: lvd1689m
+  use_dataset_prompt: false
   batch_size: 1
   num_workers: 1
 
 model:
   qwen_dtype: bfloat16
-  dinov3_arch: dinov3_vits16
-  dinov3_weights: null
+  dinov3_arch: dinov3_vitl16
+  dinov3_weights: weights/dinov3/dinov3_vitl16_pretrain_lvd1689m.pth
   dinov3_pretrained: false
   dinov3_checkpoint: outputs/stage1/best.pt
-  dino_feature_dim: 384
+  dino_feature_dim: 1024
   qwen_hidden_dim: 2048
   task_token_count: 128
   projection_hidden_dim: 1024
@@ -30,4 +32,3 @@ optim:
   lr: 0.00005
   weight_decay: 0.01
   log_every: 10
-
