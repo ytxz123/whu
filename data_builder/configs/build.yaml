@@ -1,14 +1,15 @@
-dataset_root: ""
+dataset_root: "/home/tzy/Desktop/test"
 train_root: ""
 val_root: ""
 
-output_root: "../data_0427"
+output_root: "/home/tzy/Desktop/dataset/test"
 splits: ["train", "val"]
 
 image_dir_relpath: "patch_tif"
 lane_relpath: "label_check_crop/Lane.geojson"
 image_glob: "*.tif"
 mask_suffix: "_edit_poly.tif"
+exclude_image_stem_suffixes: ["_ground", "_lane", "_pose"]
 
 patch_size: 512
 mask_threshold: 127

@@ -24,6 +24,7 @@ class RuntimeConfig:
     lane_relpath: str
     image_glob: str
     mask_suffix: str
+    exclude_image_stem_suffixes: tuple[str, ...]
     patch_size: int
     mask_threshold: int
     min_mask_ratio: float
@@ -51,6 +52,9 @@ def build_runtime(cfg: dict) -> tuple[RuntimeConfig, BuildPaths]:
             lane_relpath=str(cfg.get("lane_relpath", "label_check_crop/Lane.geojson")),
             image_glob=str(cfg.get("image_glob", "*.tif")),
             mask_suffix=str(cfg.get("mask_suffix", "_edit_poly.tif")),
+            exclude_image_stem_suffixes=tuple(
+                str(x).strip() for x in cfg.get("exclude_image_stem_suffixes", ["_ground", "_lane", "_pose"]) if str(x).strip()
+            ),
             patch_size=int(cfg.get("patch_size", 512)),
             mask_threshold=int(cfg.get("mask_threshold", 127)),
             min_mask_ratio=float(cfg.get("min_mask_ratio", 0.02)),
@@ -83,7 +87,20 @@ def family_name(sample_dir: Path, image_path: Path, image_count: int) -> str:
     return base if image_count <= 1 else sanitize_name(f"{sample_dir.name}_{image_path.stem}")
 
 
-def image_pairs(sample_dir: Path, image_dir_relpath: str, image_glob: str, mask_suffix: str) -> list[tuple[Path, Path | None]]:
+def should_use_source_image(image_path: Path, mask_suffix: str, exclude_stem_suffixes: tuple[str, ...]) -> bool:
+    if image_path.name.endswith(mask_suffix):
+        return False
+    stem = image_path.stem
+    return not any(stem.endswith(suffix) for suffix in exclude_stem_suffixes)
+
+
+def image_pairs(
+    sample_dir: Path,
+    image_dir_relpath: str,
+    image_glob: str,
+    mask_suffix: str,
+    exclude_stem_suffixes: tuple[str, ...],
+) -> list[tuple[Path, Path | None]]:
     image_dir = sample_dir / image_dir_relpath
     if not image_dir.is_dir():
         return []
@@ -91,7 +108,7 @@ def image_pairs(sample_dir: Path, image_dir_relpath: str, image_glob: str, mask_
     for image_path in sorted(image_dir.glob(image_glob)):
         if not image_path.is_file():
             continue
-        if image_path.name.endswith(mask_suffix):
+        if not should_use_source_image(image_path, mask_suffix, exclude_stem_suffixes):
             continue
         mask_path = image_path.with_name(f"{image_path.stem}{mask_suffix}")
         pairs.append((image_path, mask_path if mask_path.is_file() else None))
@@ -142,7 +159,13 @@ def export_split(split: str, split_root: Path, cfg: RuntimeConfig) -> int:
         sample_dirs = sample_dirs[: cfg.max_samples_per_split]
 
     for sample_dir in sample_dirs:
-        pairs = image_pairs(sample_dir, cfg.image_dir_relpath, cfg.image_glob, cfg.mask_suffix)
+        pairs = image_pairs(
+            sample_dir,
+            cfg.image_dir_relpath,
+            cfg.image_glob,
+            cfg.mask_suffix,
+            cfg.exclude_image_stem_suffixes,
+        )
         pair_count = len(pairs)
         for image_path, mask_path in pairs:
             image, raster_meta = read_raster_rgb(image_path)

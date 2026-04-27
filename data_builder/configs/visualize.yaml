@@ -1,5 +1,5 @@
-dataset_root: "../data_0427"
-output_root: "../vis_compare"
+dataset_root: "/home/tzy/Desktop/dataset/test"
+output_root: "/home/tzy/Desktop/dataset/test/vis"
 
 splits: ["train", "val"]
 max_samples_per_split: 0

@@ -55,6 +55,7 @@ data_0427/
 - `assistant.content` 是字符串，字符串内容本身是一个 JSON 数组
 - 每个元素当前只保留 `points`
 - 坐标使用 patch 局部坐标系
+- `images` 指向的是原始图裁出来的 patch，不会指向 `_ground`、`_lane`、`_pose` 这些派生图
 
 ## 原始数据目录要求
 
@@ -77,6 +78,14 @@ sample_xxx/
 - `*.tif` 是原始图像
 - `*_edit_poly.tif` 是 review mask
 - `Lane.geojson` 是道路中心线
+
+如果同一目录下还有派生图，例如：
+
+- `0_ground.tif`
+- `0_lane.tif`
+- `0_pose.tif`
+
+当前默认配置会排除这些派生图，只使用原始图，例如 `0.tif`、`1.tif`。
 
 ## 快速开始
 
@@ -310,6 +319,7 @@ vis_compare/
 - `lane_relpath`: 每个样本目录下 `Lane.geojson` 的相对路径
 - `image_glob`: 图像匹配模式
 - `mask_suffix`: review mask 文件后缀
+- `exclude_image_stem_suffixes`: 需要排除的派生图后缀，默认会排除 `_ground`、`_lane`、`_pose`
 - `patch_size`: patch 边长
 - `mask_threshold`: mask 二值化阈值
 - `min_mask_ratio`: patch 的最小 mask 比例阈值
@@ -357,4 +367,3 @@ vis_compare/
 - `panel_gap`: 左右对比图之间的间距
 - `panel_title_height`: 顶部标题栏高度，设为 `0` 可关闭标题栏
 - `show_point_index`: 是否在点旁边绘制点序号
-
