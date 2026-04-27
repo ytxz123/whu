@@ -11,6 +11,7 @@ from PIL import Image
 from .config import BuildPaths, build_paths, load_yaml
 from .geo import load_lane_lines, read_mask, read_raster_rgb
 from .io_utils import ensure_dir, sanitize_name, write_jsonl
+from .rendering import AnnotationStyle, render_label_image
 from .tiling import PatchWindow, clip_polyline_to_rect, generate_patch_windows, localize_and_quantize
 
 
@@ -26,6 +27,7 @@ class RuntimeConfig:
     image_glob: str
     mask_suffix: str
     exclude_image_stem_suffixes: tuple[str, ...]
+    label_image_dirname: str
     patch_size: int
     mask_threshold: int
     min_mask_ratio: float
@@ -56,6 +58,7 @@ def build_runtime(cfg: dict) -> tuple[RuntimeConfig, BuildPaths]:
             exclude_image_stem_suffixes=tuple(
                 str(x).strip() for x in cfg.get("exclude_image_stem_suffixes", ["_ground", "_lane", "_pose"]) if str(x).strip()
             ),
+            label_image_dirname=str(cfg.get("label_image_dirname", "img_label")).strip() or "img_label",
             patch_size=int(cfg.get("patch_size", 512)),
             mask_threshold=int(cfg.get("mask_threshold", 127)),
             min_mask_ratio=float(cfg.get("min_mask_ratio", 0.02)),
@@ -172,8 +175,10 @@ def keep_empty_annotation(cfg: RuntimeConfig, rng: random.Random) -> bool:
 def export_split(split: str, split_root: Path, cfg: RuntimeConfig) -> int:
     out_dir = ensure_dir(cfg.output_root)
     img_root = ensure_dir(out_dir / f"img_{split}")
+    label_split_root = ensure_dir(out_dir / cfg.label_image_dirname / split)
     rows: list[dict] = []
     rng = random.Random(int(cfg.empty_annotation_seed) + (0 if split == "train" else 100003))
+    label_style = AnnotationStyle()
     sample_dirs = [p for p in sorted(split_root.iterdir()) if p.is_dir()]
     if cfg.max_samples_per_split > 0:
         sample_dirs = sample_dirs[: cfg.max_samples_per_split]
@@ -196,6 +201,7 @@ def export_split(split: str, split_root: Path, cfg: RuntimeConfig) -> int:
             lines_global = load_lane_lines(sample_dir / cfg.lane_relpath, raster_meta)
             family_id = family_name(sample_dir, image_path, pair_count)
             family_dir = ensure_dir(img_root / family_id)
+            label_family_dir = ensure_dir(label_split_root / family_id)
             windows = generate_patch_windows(raster_meta.width, raster_meta.height, cfg.patch_size)
             patch_number = 0
             for window in windows:
@@ -203,6 +209,7 @@ def export_split(split: str, split_root: Path, cfg: RuntimeConfig) -> int:
                 clipped = []
                 for line in lines_global:
                     clipped.extend(clip_polyline_to_rect(line, rect))
+                label_lines = localize_and_quantize(clipped, window, 0.0)
                 local_lines = localize_and_quantize(clipped, window, cfg.simplify_tolerance)
                 mask_ratio, mask_pixels = patch_mask_stats(mask, window)
                 if not should_keep_patch(mask_ratio, mask_pixels, local_lines, cfg):
@@ -213,10 +220,14 @@ def export_split(split: str, split_root: Path, cfg: RuntimeConfig) -> int:
                 patch_number += 1
                 patch_name = f"r{window.row}_c{window.col}_p{patch_number:02d}.png"
                 patch_path = family_dir / patch_name
+                label_patch_path = label_family_dir / patch_name
                 patch_array = crop_array_to_window(image, window, fill_value=0)
                 patch = Image.fromarray(patch_array)
                 patch.save(patch_path)
                 patch.close()
+                label_patch = render_label_image(patch_array.shape[1], patch_array.shape[0], label_lines, label_style)
+                label_patch.save(label_patch_path)
+                label_patch.close()
 
                 sample_id = f"{family_id}_r{window.row}_c{window.col}_p{patch_number:02d}"
                 image_rel = f"img_{split}/{family_id}/{patch_name}"

@@ -13,6 +13,14 @@
 
 ```text
 data_0427/
+├── img_label/
+│   ├── train/
+│   │   ├── sample_a/
+│   │   │   ├── r0_c0_p01.png
+│   │   │   └── ...
+│   │   └── ...
+│   └── val/
+│       └── ...
 ├── img_train/
 │   ├── sample_a/
 │   │   ├── r0_c0_p01.png
@@ -56,6 +64,7 @@ data_0427/
 - 每个元素当前只保留 `points`
 - 坐标使用 patch 局部坐标系
 - `images` 指向的是原始图裁出来的 patch，不会指向 `_ground`、`_lane`、`_pose` 这些派生图
+- 构建阶段还会额外生成 `img_label/<split>/...`，保存原始中心线标注的可视化图
 
 ## 原始数据目录要求
 
@@ -146,6 +155,7 @@ output_root: "/path/to/vis_compare"
 
 - `train.jsonl`
 - `val.jsonl`
+- `img_label/`
 - `img_train/`
 - `img_val/`
 
@@ -302,7 +312,10 @@ vis_compare/
 每张输出图默认是左右并排：
 
 - 左侧：`raw patch`
+- 中间：`original centerline labels`
 - 右侧：`patch + jsonl labels`
+
+中间图来自构建阶段生成的 `img_label/<split>/...`，展示的是原始道路中心线标注。
 
 右侧会把 `assistant.content` 里的折线画到 patch 图像上，并为每个点画出清晰可见的圆点。
 
@@ -320,6 +333,7 @@ vis_compare/
 - `image_glob`: 图像匹配模式
 - `mask_suffix`: review mask 文件后缀
 - `exclude_image_stem_suffixes`: 需要排除的派生图后缀，默认会排除 `_ground`、`_lane`、`_pose`
+- `label_image_dirname`: 原始中心线标注可视化目录名，默认 `img_label`
 - `patch_size`: patch 边长
 - `mask_threshold`: mask 二值化阈值
 - `min_mask_ratio`: patch 的最小 mask 比例阈值
@@ -353,6 +367,8 @@ vis_compare/
 - `simplify_tolerance` 越小，形状保留越细
 - 设为 `0` 表示关闭简化
 
+构建阶段生成的 `img_label` 不使用这个简化参数，它展示的是原始中心线在 patch 局部坐标下的可视化结果。
+
 ### patch 切窗逻辑
 
 为了避免原始图宽高不能被 `patch_size` 整除时，边缘导出出小尺寸 patch，当前切窗逻辑使用固定尺寸滑窗：
@@ -369,6 +385,7 @@ vis_compare/
 
 - `dataset_root`: 已生成数据集目录，内部应包含 `train.jsonl`、`val.jsonl` 和 `img_*`
 - `output_root`: 可视化输出目录
+- `label_image_dirname`: 原始中心线标注可视化目录名，默认 `img_label`
 - `splits`: 要可视化的 split 列表
 - `max_samples_per_split`: 每个 split 最多输出多少条，`0` 表示全部
 - `line_width`: 叠加折线宽度

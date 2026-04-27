@@ -9,12 +9,14 @@ from PIL import Image, ImageDraw, ImageFont
 
 from .config import load_yaml, resolve_optional_path
 from .io_utils import ensure_dir
+from .rendering import AnnotationStyle, draw_annotations
 
 
 @dataclass
 class VisualizeConfig:
     dataset_root: Path
     output_root: Path
+    label_image_dirname: str
     splits: list[str]
     max_samples_per_split: int
     line_width: int
@@ -41,6 +43,7 @@ def build_visualize_config(config_path: str | Path, overrides: dict | None = Non
     return VisualizeConfig(
         dataset_root=dataset_root,
         output_root=output_root or (config_dir.parent / "vis_compare").resolve(),
+        label_image_dirname=str(cfg.get("label_image_dirname", "img_label")).strip() or "img_label",
         splits=[str(x) for x in cfg.get("splits", ["train", "val"])],
         max_samples_per_split=int(cfg.get("max_samples_per_split", 0)),
         line_width=max(1, int(cfg.get("line_width", 3))),
@@ -96,46 +99,6 @@ def sample_image_path(row: dict, dataset_root: Path) -> tuple[Path, Path]:
     return (dataset_root / rel).resolve(), rel
 
 
-def color_for_index(index: int) -> tuple[int, int, int]:
-    palette = [
-        (245, 99, 99),
-        (66, 165, 245),
-        (102, 187, 106),
-        (255, 202, 40),
-        (171, 71, 188),
-        (38, 166, 154),
-        (255, 112, 67),
-        (124, 179, 66),
-    ]
-    return palette[index % len(palette)]
-
-
-def draw_point(draw: ImageDraw.ImageDraw, x: int, y: int, radius: int, outline_width: int, color: tuple[int, int, int]) -> None:
-    bounds = (x - radius, y - radius, x + radius, y + radius)
-    draw.ellipse(bounds, fill=(255, 255, 255), outline=color, width=outline_width)
-
-
-def draw_annotations(image: Image.Image, lines: list[dict], cfg: VisualizeConfig) -> Image.Image:
-    overlay = image.convert("RGB").copy()
-    draw = ImageDraw.Draw(overlay)
-    font = ImageFont.load_default()
-
-    for line_index, line in enumerate(lines):
-        points = line.get("points", [])
-        if not isinstance(points, list) or len(points) < 2:
-            continue
-        xy = [(int(pt[0]), int(pt[1])) for pt in points if isinstance(pt, list) and len(pt) >= 2]
-        if len(xy) < 2:
-            continue
-        color = color_for_index(line_index)
-        draw.line(xy, fill=color, width=cfg.line_width, joint="curve")
-        for point_index, (x, y) in enumerate(xy):
-            draw_point(draw, x, y, cfg.point_radius, cfg.point_outline_width, color)
-            if cfg.show_point_index:
-                draw.text((x + cfg.point_radius + 2, y - cfg.point_radius - 2), str(point_index), fill=color, font=font)
-    return overlay
-
-
 def add_panel_title(image: Image.Image, title: str, title_height: int) -> Image.Image:
     if title_height <= 0:
         return image
@@ -147,14 +110,34 @@ def add_panel_title(image: Image.Image, title: str, title_height: int) -> Image.
     return canvas
 
 
-def compose_compare(raw_image: Image.Image, overlay_image: Image.Image, cfg: VisualizeConfig) -> Image.Image:
-    raw_panel = add_panel_title(raw_image.convert("RGB"), "raw patch", cfg.panel_title_height)
-    overlay_panel = add_panel_title(overlay_image.convert("RGB"), "patch + jsonl labels", cfg.panel_title_height)
-    width = raw_panel.width + cfg.panel_gap + overlay_panel.width
-    height = max(raw_panel.height, overlay_panel.height)
+def label_image_path(rel_path: Path, cfg: VisualizeConfig) -> Path | None:
+    parts = rel_path.parts
+    if len(parts) < 2:
+        return None
+    split_part = parts[0]
+    if split_part == "img_train":
+        split = "train"
+    elif split_part == "img_val":
+        split = "val"
+    else:
+        return None
+    return (cfg.dataset_root / cfg.label_image_dirname / split / Path(*parts[1:])).resolve()
+
+
+def compose_compare(raw_image: Image.Image, label_image: Image.Image | None, overlay_image: Image.Image, cfg: VisualizeConfig) -> Image.Image:
+    panels = [add_panel_title(raw_image.convert("RGB"), "raw patch", cfg.panel_title_height)]
+    if label_image is not None:
+        panels.append(add_panel_title(label_image.convert("RGB"), "original centerline labels", cfg.panel_title_height))
+    panels.append(add_panel_title(overlay_image.convert("RGB"), "patch + jsonl labels", cfg.panel_title_height))
+    width = sum(panel.width for panel in panels) + cfg.panel_gap * max(0, len(panels) - 1)
+    height = max(panel.height for panel in panels)
     canvas = Image.new("RGB", (width, height), color=(255, 255, 255))
-    canvas.paste(raw_panel, (0, 0))
-    canvas.paste(overlay_panel, (raw_panel.width + cfg.panel_gap, 0))
+    x_offset = 0
+    for index, panel in enumerate(panels):
+        canvas.paste(panel, (x_offset, 0))
+        x_offset += panel.width
+        if index < len(panels) - 1:
+            x_offset += cfg.panel_gap
     return canvas
 
 
@@ -167,8 +150,21 @@ def render_sample(row: dict, cfg: VisualizeConfig) -> tuple[Image.Image, Path]:
     lines = assistant_payload(row)
     with Image.open(image_path) as raw_image:
         raw_rgb = raw_image.convert("RGB")
-    overlay = draw_annotations(raw_rgb, lines, cfg)
-    compare = compose_compare(raw_rgb, overlay, cfg)
+    style = AnnotationStyle(
+        line_width=cfg.line_width,
+        point_radius=cfg.point_radius,
+        point_outline_width=cfg.point_outline_width,
+        show_point_index=cfg.show_point_index,
+    )
+    overlay = draw_annotations(raw_rgb, lines, style)
+    label_path = label_image_path(rel_path, cfg)
+    label_image = None
+    if label_path is not None and label_path.is_file():
+        with Image.open(label_path) as source:
+            label_image = source.convert("RGB")
+    compare = compose_compare(raw_rgb, label_image, overlay, cfg)
+    if label_image is not None:
+        label_image.close()
     return compare, rel_path
 
 

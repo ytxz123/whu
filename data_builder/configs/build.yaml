@@ -10,13 +10,14 @@ lane_relpath: "label_check_crop/Lane.geojson"
 image_glob: "*.tif"
 mask_suffix: "_edit_poly.tif"
 exclude_image_stem_suffixes: ["_ground", "_lane", "_pose"]
+label_image_dirname: "img_label"
 
-patch_size: 256
+patch_size: 384
 mask_threshold: 127
 min_mask_ratio: 0.02
 min_mask_pixels: 64
 drop_empty_annotations: true
-empty_annotation_keep_ratio: 0.10
+empty_annotation_keep_ratio: 0.05
 empty_annotation_seed: 42
 save_black_background_from_mask: true
 max_samples_per_split: 0
