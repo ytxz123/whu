@@ -1,0 +1,25 @@
+dataset_root: ""
+train_root: ""
+val_root: ""
+
+output_root: "../data_0427"
+splits: ["train", "val"]
+
+image_dir_relpath: "patch_tif"
+lane_relpath: "label_check_crop/Lane.geojson"
+image_glob: "*.tif"
+mask_suffix: "_edit_poly.tif"
+
+patch_size: 512
+mask_threshold: 127
+min_mask_ratio: 0.02
+min_mask_pixels: 64
+drop_empty_annotations: true
+empty_annotation_keep_ratio: 0.10
+empty_annotation_seed: 42
+save_black_background_from_mask: true
+max_samples_per_split: 0
+simplify_tolerance: 2.0
+
+system_prompt: "You are a road-map reconstruction assistant designed to process BEV (Bird's Eye View) images generated from LiDAR data.\nPredict the complete road map from the current patch in the BEV image.\nReturn only valid JSON in the required schema.\nDo not output markdown fences or extra explanation.\nKeep all coordinates in the patch-local coordinate system."
+user_prompt: "<image>\nPlease construct the complete road map in the current BEV (Bird's Eye View) image patch."

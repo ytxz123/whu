@@ -1,0 +1,12 @@
+dataset_root: "../data_0427"
+output_root: "../vis_compare"
+
+splits: ["train", "val"]
+max_samples_per_split: 0
+
+line_width: 3
+point_radius: 4
+point_outline_width: 2
+panel_gap: 16
+panel_title_height: 28
+show_point_index: false
