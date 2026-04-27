@@ -11,7 +11,7 @@ image_glob: "*.tif"
 mask_suffix: "_edit_poly.tif"
 exclude_image_stem_suffixes: ["_ground", "_lane", "_pose"]
 
-patch_size: 512
+patch_size: 256
 mask_threshold: 127
 min_mask_ratio: 0.02
 min_mask_pixels: 64

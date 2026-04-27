@@ -353,6 +353,16 @@ vis_compare/
 - `simplify_tolerance` 越小，形状保留越细
 - 设为 `0` 表示关闭简化
 
+### patch 切窗逻辑
+
+为了避免原始图宽高不能被 `patch_size` 整除时，边缘导出出小尺寸 patch，当前切窗逻辑使用固定尺寸滑窗：
+
+- 常规区域按 `patch_size` 步长切分
+- 最后一行或最后一列如果不够一个完整 patch，会把窗口向回滑到最后一个完整位置
+- 如果原图本身某一边小于 `patch_size`，导出时会在右侧或下侧补黑边
+
+因此最终写出的 patch 图片尺寸会统一为 `patch_size x patch_size`。
+
 ## visualize.yaml 参数说明
 
 当前 `data_builder/configs/visualize.yaml` 里的字段含义如下：

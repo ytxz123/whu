@@ -5,6 +5,7 @@ import random
 from dataclasses import dataclass
 from pathlib import Path
 
+import numpy as np
 from PIL import Image
 
 from .config import BuildPaths, build_paths, load_yaml
@@ -118,10 +119,29 @@ def image_pairs(
 def patch_mask_stats(mask, window: PatchWindow) -> tuple[float, int]:
     if mask is None:
         return 0.0, 0
-    crop = mask[window.y0 : window.y1, window.x0 : window.x1]
-    if crop.size == 0:
-        return 0.0, 0
+    crop = crop_array_to_window(mask, window, fill_value=0)
     return float(crop.mean()), int(crop.sum())
+
+
+def crop_array_to_window(array, window: PatchWindow, fill_value: int = 0):
+    target_height = max(1, window.y1 - window.y0)
+    target_width = max(1, window.x1 - window.x0)
+    y0 = max(0, int(window.y0))
+    x0 = max(0, int(window.x0))
+    y1 = min(int(window.y1), int(array.shape[0]))
+    x1 = min(int(window.x1), int(array.shape[1]))
+    crop = array[y0:y1, x0:x1]
+    if crop.shape[0] == target_height and crop.shape[1] == target_width:
+        return crop.copy()
+
+    if crop.ndim == 2:
+        out = np.full((target_height, target_width), fill_value, dtype=array.dtype)
+        out[: crop.shape[0], : crop.shape[1]] = crop
+        return out
+
+    out = np.full((target_height, target_width, crop.shape[2]), fill_value, dtype=array.dtype)
+    out[: crop.shape[0], : crop.shape[1], :] = crop
+    return out
 
 
 def should_keep_patch(mask_ratio: float, mask_pixels: int, lines: list[dict], cfg: RuntimeConfig) -> bool:
@@ -193,7 +213,8 @@ def export_split(split: str, split_root: Path, cfg: RuntimeConfig) -> int:
                 patch_number += 1
                 patch_name = f"r{window.row}_c{window.col}_p{patch_number:02d}.png"
                 patch_path = family_dir / patch_name
-                patch = Image.fromarray(image[window.y0 : window.y1, window.x0 : window.x1, :])
+                patch_array = crop_array_to_window(image, window, fill_value=0)
+                patch = Image.fromarray(patch_array)
                 patch.save(patch_path)
                 patch.close()
 

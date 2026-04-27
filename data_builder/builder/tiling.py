@@ -17,20 +17,32 @@ class PatchWindow:
     y1: int
 
 
+def generate_window_starts(total_size: int, window_size: int) -> list[int]:
+    total_size = max(0, int(total_size))
+    window_size = max(1, int(window_size))
+    if total_size == 0:
+        return []
+    if total_size <= window_size:
+        return [0]
+    starts = list(range(0, total_size - window_size + 1, window_size))
+    last_start = total_size - window_size
+    if starts[-1] != last_start:
+        starts.append(last_start)
+    return starts
+
+
 def generate_patch_windows(width: int, height: int, patch_size: int) -> list[PatchWindow]:
     patch_size = max(1, int(patch_size))
     windows: list[PatchWindow] = []
     patch_index = 0
-    row_index = 0
-    for y0 in range(0, int(height), patch_size):
-        col_index = 0
-        y1 = min(int(height), y0 + patch_size)
-        for x0 in range(0, int(width), patch_size):
-            x1 = min(int(width), x0 + patch_size)
+    y_starts = generate_window_starts(height, patch_size)
+    x_starts = generate_window_starts(width, patch_size)
+    for row_index, y0 in enumerate(y_starts):
+        y1 = y0 + patch_size
+        for col_index, x0 in enumerate(x_starts):
+            x1 = x0 + patch_size
             windows.append(PatchWindow(patch_index, row_index, col_index, x0, y0, x1, y1))
             patch_index += 1
-            col_index += 1
-        row_index += 1
     return windows
 
 
