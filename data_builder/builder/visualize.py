@@ -71,6 +71,22 @@ def iter_jsonl_rows(path: Path) -> Iterable[dict]:
 
 
 def assistant_payload(row: dict) -> list[dict]:
+    conversations = row.get("conversations", [])
+    if isinstance(conversations, list):
+        for message in conversations:
+            if not isinstance(message, dict):
+                continue
+            if str(message.get("from", "")).strip() != "assistant":
+                continue
+            content = message.get("value", "[]")
+            if isinstance(content, str):
+                try:
+                    parsed = json.loads(content)
+                except json.JSONDecodeError as exc:
+                    sample_id = row.get("id", "unknown")
+                    raise ValueError(f"Assistant content is not valid JSON for sample {sample_id}") from exc
+                return parsed if isinstance(parsed, list) else []
+
     messages = row.get("messages", [])
     if not isinstance(messages, list):
         return []

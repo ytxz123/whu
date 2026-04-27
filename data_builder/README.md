@@ -38,18 +38,14 @@ data_0427/
 ```json
 {
   "id": "A170_xxx_r2_c7_p01",
-  "messages": [
+  "conversations": [
     {
-      "role": "system",
-      "content": "..."
+      "from": "user",
+      "value": "You are a road-map reconstruction assistant ...\n\n<image>\nPlease construct the complete road map in the current BEV (Bird's Eye View) image patch."
     },
     {
-      "role": "user",
-      "content": "<image>\nPlease construct the complete road map in the current BEV (Bird's Eye View) image patch."
-    },
-    {
-      "role": "assistant",
-      "content": "[{\"points\":[[151,143],[225,210]]}]"
+      "from": "assistant",
+      "value": "[{\"points\":[[151,143],[225,210]]}]"
     }
   ],
   "images": [
@@ -60,7 +56,8 @@ data_0427/
 
 注意：
 
-- `assistant.content` 是字符串，字符串内容本身是一个 JSON 数组
+- `conversations[0].value` 会把原来的 `system_prompt` 和 `user_prompt` 合并到同一条 user 消息里
+- `conversations[1].value` 是字符串，字符串内容本身是一个 JSON 数组
 - 每个元素当前只保留 `points`
 - 坐标使用 patch 局部坐标系
 - `images` 指向的是原始图裁出来的 patch，不会指向 `_ground`、`_lane`、`_pose` 这些派生图
@@ -319,7 +316,7 @@ vis_compare/
 
 `img_label` 本身是黑底白线的纯标签图，不会额外绘制彩色线条、点或点序号。
 
-右侧会把 `assistant.content` 里的折线以统一白色叠加到 patch 图像上，并为每个点画出对应的白色标记。
+右侧会把 `conversations[1].value` 里的折线以统一白色叠加到 patch 图像上，并为每个点画出对应的白色标记。
 
 ## build.yaml 参数说明
 
@@ -346,8 +343,8 @@ vis_compare/
 - `save_black_background_from_mask`: 是否把 mask 外像素置黑
 - `max_samples_per_split`: 每个 split 最多处理多少个样本目录，`0` 表示全部
 - `simplify_tolerance`: Douglas–Peucker 简化容差，单位是 patch 像素
-- `system_prompt`: 写入每条样本 `messages[0].content`
-- `user_prompt`: 写入每条样本 `messages[1].content`
+- `system_prompt`: 构建时会和 `user_prompt` 合并后写入 `conversations[0].value`
+- `user_prompt`: 构建时会和 `system_prompt` 合并后写入 `conversations[0].value`
 
 ### 构建时的路径优先级
 
@@ -363,7 +360,7 @@ vis_compare/
 
 ### 折线简化逻辑
 
-为了降低 `assistant.content` 的 token 长度，构建流程会在写出 patch 局部坐标前，对每条线应用 Douglas–Peucker algorithm。
+为了降低 `conversations[1].value` 的 token 长度，构建流程会在写出 patch 局部坐标前，对每条线应用 Douglas–Peucker algorithm。
 
 - `simplify_tolerance` 越大，保留点越少
 - `simplify_tolerance` 越小，形状保留越细

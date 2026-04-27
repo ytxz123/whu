@@ -153,13 +153,20 @@ def should_keep_patch(mask_ratio: float, mask_pixels: int, lines: list[dict], cf
     return bool(lines)
 
 
+def merge_prompt_text(system_prompt: str, user_prompt: str) -> str:
+    system_prompt = str(system_prompt).strip()
+    user_prompt = str(user_prompt).strip()
+    if system_prompt and user_prompt:
+        return f"{system_prompt}\n\n{user_prompt}"
+    return system_prompt or user_prompt
+
+
 def make_record(sample_id: str, system_prompt: str, user_prompt: str, assistant_payload: list[dict], image_rel: str) -> dict:
     return {
         "id": sample_id,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-            {"role": "assistant", "content": json.dumps(assistant_payload, ensure_ascii=False, separators=(",", ":"))},
+        "conversations": [
+            {"from": "user", "value": merge_prompt_text(system_prompt, user_prompt)},
+            {"from": "assistant", "value": json.dumps(assistant_payload, ensure_ascii=False, separators=(",", ":"))},
         ],
         "images": [image_rel.replace("\\", "/")],
     }
