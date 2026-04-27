@@ -319,7 +319,7 @@ vis_compare/
 
 `img_label` 本身是黑底白线的纯标签图，不会额外绘制彩色线条、点或点序号。
 
-右侧会把 `assistant.content` 里的折线画到 patch 图像上，并为每个点画出清晰可见的圆点。
+右侧会把 `assistant.content` 里的折线以统一白色叠加到 patch 图像上，并为每个点画出对应的白色标记。
 
 ## build.yaml 参数说明
 

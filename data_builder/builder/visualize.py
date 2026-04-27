@@ -155,6 +155,7 @@ def render_sample(row: dict, cfg: VisualizeConfig) -> tuple[Image.Image, Path]:
         point_radius=cfg.point_radius,
         point_outline_width=cfg.point_outline_width,
         show_point_index=cfg.show_point_index,
+        fixed_line_color=(255, 255, 255),
     )
     overlay = draw_annotations(raw_rgb, lines, style)
     label_path = label_image_path(rel_path, cfg)
