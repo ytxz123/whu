@@ -11,6 +11,8 @@ class AnnotationStyle:
     point_radius: int = 4
     point_outline_width: int = 2
     show_point_index: bool = False
+    draw_points: bool = True
+    fixed_line_color: tuple[int, int, int] | None = None
 
 
 def color_for_index(index: int) -> tuple[int, int, int]:
@@ -44,12 +46,13 @@ def draw_annotations(image: Image.Image, lines: list[dict], style: AnnotationSty
         xy = [(int(pt[0]), int(pt[1])) for pt in points if isinstance(pt, list) and len(pt) >= 2]
         if len(xy) < 2:
             continue
-        color = color_for_index(line_index)
+        color = style.fixed_line_color if style.fixed_line_color is not None else color_for_index(line_index)
         draw.line(xy, fill=color, width=style.line_width, joint="curve")
-        for point_index, (x, y) in enumerate(xy):
-            draw_point(draw, x, y, style.point_radius, style.point_outline_width, color)
-            if style.show_point_index:
-                draw.text((x + style.point_radius + 2, y - style.point_radius - 2), str(point_index), fill=color, font=font)
+        if style.draw_points:
+            for point_index, (x, y) in enumerate(xy):
+                draw_point(draw, x, y, style.point_radius, style.point_outline_width, color)
+                if style.show_point_index:
+                    draw.text((x + style.point_radius + 2, y - style.point_radius - 2), str(point_index), fill=color, font=font)
     return overlay
 
 

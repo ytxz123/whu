@@ -178,7 +178,7 @@ def export_split(split: str, split_root: Path, cfg: RuntimeConfig) -> int:
     label_split_root = ensure_dir(out_dir / cfg.label_image_dirname / split)
     rows: list[dict] = []
     rng = random.Random(int(cfg.empty_annotation_seed) + (0 if split == "train" else 100003))
-    label_style = AnnotationStyle()
+    label_style = AnnotationStyle(line_width=2, draw_points=False, fixed_line_color=(255, 255, 255))
     sample_dirs = [p for p in sorted(split_root.iterdir()) if p.is_dir()]
     if cfg.max_samples_per_split > 0:
         sample_dirs = sample_dirs[: cfg.max_samples_per_split]

@@ -64,7 +64,7 @@ data_0427/
 - 每个元素当前只保留 `points`
 - 坐标使用 patch 局部坐标系
 - `images` 指向的是原始图裁出来的 patch，不会指向 `_ground`、`_lane`、`_pose` 这些派生图
-- 构建阶段还会额外生成 `img_label/<split>/...`，保存原始中心线标注的可视化图
+- 构建阶段还会额外生成 `img_label/<split>/...`，直接基于原始 `Lane.geojson` 生成中心线标注图
 
 ## 原始数据目录要求
 
@@ -315,7 +315,9 @@ vis_compare/
 - 中间：`original centerline labels`
 - 右侧：`patch + jsonl labels`
 
-中间图来自构建阶段生成的 `img_label/<split>/...`，展示的是原始道路中心线标注。
+中间图来自构建阶段生成的 `img_label/<split>/...`，直接对应原始 `Lane.geojson` 在 patch 局部坐标下的结果。
+
+`img_label` 本身是黑底白线的纯标签图，不会额外绘制彩色线条、点或点序号。
 
 右侧会把 `assistant.content` 里的折线画到 patch 图像上，并为每个点画出清晰可见的圆点。
 
@@ -367,7 +369,7 @@ vis_compare/
 - `simplify_tolerance` 越小，形状保留越细
 - 设为 `0` 表示关闭简化
 
-构建阶段生成的 `img_label` 不使用这个简化参数，它展示的是原始中心线在 patch 局部坐标下的可视化结果。
+构建阶段生成的 `img_label` 不使用这个简化参数，它展示的是原始中心线在 patch 局部坐标下的黑底白线标签图。
 
 ### patch 切窗逻辑
 
