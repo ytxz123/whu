@@ -2,7 +2,7 @@ dataset_root: "/home/tzy/Desktop/dataset/test"
 output_root: "/home/tzy/Desktop/dataset/test/vis"
 label_image_dirname: "img_label"
 
-jsonl_sources: ["val"]
+jsonl_sources: ["train", "val", "infer"]
 max_samples_per_split: 0
 
 line_width: 3

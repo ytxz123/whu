@@ -185,7 +185,7 @@ jsonl_sources: ["train"]
 或者：
 
 ```yaml
-jsonl_sources: ["val", "infer.json"]
+jsonl_sources: ["val", "infer"]
 ```
 
 
@@ -310,18 +310,21 @@ python data_builder/scripts/visualize_dataset.py \
 
 ## 可视化输出说明
 
-输出目录结构会和数据集里的 `img_train/`、`img_val/` 保持一致，例如：
+输出目录会按来源分开，例如：
 
 ```text
 vis_compare/
-├── img_train/
-│   ├── sample_a/
-│   │   ├── r0_c0_p01.png
-│   │   ├── r0_c1_p02.png
-│   │   └── ...
-│   └── ...
-├── img_val/
-│   └── ...
+├── train/
+│   └── img_train/
+│       ├── sample_a/
+│       │   ├── r0_c0_p01.png
+│       │   └── ...
+├── val/
+│   └── img_val/
+│       └── ...
+├── infer/
+│   └── img_val/
+│       └── ...
 ```
 
 每张输出图默认是左右并排：
@@ -339,9 +342,10 @@ vis_compare/
 如果输入是推理结果文件，例如 `infer.json` / `infer.jsonl`：
 
 - 会优先读取顶层 `response` 字段作为预测结果
-- 会自动去掉 `<think>...</think>` 包裹内容
+- 如果字符串开头带有 `<think>...</think>`，会自动先去掉这一段
 - `images` 可以是字符串列表，也可以是 `{ "path": "..." }` 结构
 - 如果找不到对应的 `img_label` 文件，但行内有 `labels` 字段，会直接用 `labels` 生成中间标签图
+- 当 `jsonl_sources` 里写 `infer` 时，会优先找 `infer.jsonl`，找不到再回退到 `infer.json`
 
 ## build.yaml 参数说明
 
@@ -410,7 +414,7 @@ vis_compare/
 - `dataset_root`: 已生成数据集目录，内部应包含 `train.jsonl`、`val.jsonl` 和 `img_*`
 - `output_root`: 可视化输出目录
 - `label_image_dirname`: 原始中心线标注可视化目录名，默认 `img_label`
-- `jsonl_sources`: 要可视化的来源列表。可写 `train`、`val`，也可写精确文件名如 `infer.json`
+- `jsonl_sources`: 要可视化的来源列表。推荐写统一名字 `train`、`val`、`infer`
 - `max_samples_per_split`: 每个 split 最多输出多少条，`0` 表示全部
 - `line_width`: 叠加折线宽度
 - `point_radius`: 每个点的半径

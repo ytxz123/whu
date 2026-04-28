@@ -56,7 +56,7 @@ def build_visualize_config(config_path: str | Path, overrides: dict | None = Non
         dataset_root=dataset_root,
         output_root=output_root or (config_dir.parent / "vis_compare").resolve(),
         label_image_dirname=str(cfg.get("label_image_dirname", "img_label")).strip() or "img_label",
-        jsonl_sources=normalize_string_list(cfg.get("jsonl_sources", cfg.get("splits", ["train", "val"])), ["train", "val"]),
+        jsonl_sources=normalize_string_list(cfg.get("jsonl_sources", cfg.get("splits", ["train", "val", "infer"])), ["train", "val", "infer"]),
         max_samples_per_split=int(cfg.get("max_samples_per_split", 0)),
         line_width=max(1, int(cfg.get("line_width", 3))),
         point_radius=max(1, int(cfg.get("point_radius", 4))),
@@ -97,7 +97,7 @@ def iter_jsonl_rows(path: Path) -> Iterable[dict]:
 
 
 def parse_annotation_text(text: str, sample_id: str, field_name: str) -> list[dict]:
-    cleaned = re.sub(r"<think>.*?</think>\s*", "", str(text), flags=re.DOTALL).strip()
+    cleaned = re.sub(r"^\s*<think>.*?</think>\s*", "", str(text), flags=re.DOTALL).strip()
     candidates = [cleaned]
     start = cleaned.find("[")
     end = cleaned.rfind("]")
@@ -253,19 +253,33 @@ def resolve_jsonl_path(source: str, dataset_root: Path) -> Path:
     source = str(source).strip()
     if source.endswith(".json") or source.endswith(".jsonl"):
         return (dataset_root / source).resolve()
+    if source == "infer":
+        infer_jsonl = (dataset_root / "infer.jsonl").resolve()
+        if infer_jsonl.is_file():
+            return infer_jsonl
+        infer_json = (dataset_root / "infer.json").resolve()
+        if infer_json.is_file():
+            return infer_json
     return (dataset_root / f"{source}.jsonl").resolve()
+
+
+def source_output_dirname(source: str) -> str:
+    source = str(source).strip()
+    name = Path(source).stem if (source.endswith(".json") or source.endswith(".jsonl")) else source
+    return name or "vis"
 
 
 def visualize_source(source: str, cfg: VisualizeConfig) -> int:
     jsonl_path = resolve_jsonl_path(source, cfg.dataset_root)
     if not jsonl_path.is_file():
         return 0
+    source_dir = ensure_dir(cfg.output_root / source_output_dirname(source))
     count = 0
     for row in iter_jsonl_rows(jsonl_path):
         if cfg.max_samples_per_split > 0 and count >= cfg.max_samples_per_split:
             break
         compare, rel_path = render_sample(row, cfg)
-        out_path = cfg.output_root / rel_path
+        out_path = source_dir / rel_path
         ensure_dir(out_path.parent)
         compare.save(out_path)
         compare.close()
@@ -278,4 +292,4 @@ def run(config_path: str | Path, overrides: dict | None = None) -> None:
     ensure_dir(cfg.output_root)
     for source in cfg.jsonl_sources:
         count = visualize_source(source, cfg)
-        print(f"[data_builder.visualize] source={source} rows={count} output={cfg.output_root}", flush=True)
+        print(f"[data_builder.visualize] source={source} rows={count} output={cfg.output_root / source_output_dirname(source)}", flush=True)
