@@ -157,6 +157,7 @@ output_root: "/path/to/vis_compare"
 
 - `train.jsonl`
 - `val.jsonl`
+- `infer.json` 或 `infer.jsonl`（如果要可视化推理结果）
 - `img_label/`
 - `img_train/`
 - `img_val/`
@@ -173,6 +174,18 @@ python data_builder/scripts/visualize_dataset.py
 
 ```text
 data_builder/configs/visualize.yaml
+```
+
+你可以只通过修改 yaml 来切换要可视化的来源，例如：
+
+```yaml
+jsonl_sources: ["train"]
+```
+
+或者：
+
+```yaml
+jsonl_sources: ["val", "infer.json"]
 ```
 
 
@@ -323,6 +336,13 @@ vis_compare/
 
 右侧会把 `messages` 中 assistant 的 `content` 里的折线以统一白色叠加到 patch 图像上，并为每个点画出对应的白色标记。
 
+如果输入是推理结果文件，例如 `infer.json` / `infer.jsonl`：
+
+- 会优先读取顶层 `response` 字段作为预测结果
+- 会自动去掉 `<think>...</think>` 包裹内容
+- `images` 可以是字符串列表，也可以是 `{ "path": "..." }` 结构
+- 如果找不到对应的 `img_label` 文件，但行内有 `labels` 字段，会直接用 `labels` 生成中间标签图
+
 ## build.yaml 参数说明
 
 当前 `data_builder/configs/build.yaml` 里的字段含义如下：
@@ -390,7 +410,7 @@ vis_compare/
 - `dataset_root`: 已生成数据集目录，内部应包含 `train.jsonl`、`val.jsonl` 和 `img_*`
 - `output_root`: 可视化输出目录
 - `label_image_dirname`: 原始中心线标注可视化目录名，默认 `img_label`
-- `splits`: 要可视化的 split 列表
+- `jsonl_sources`: 要可视化的来源列表。可写 `train`、`val`，也可写精确文件名如 `infer.json`
 - `max_samples_per_split`: 每个 split 最多输出多少条，`0` 表示全部
 - `line_width`: 叠加折线宽度
 - `point_radius`: 每个点的半径
